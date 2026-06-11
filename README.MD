@@ -1,140 +1,81 @@
-<h1 align="center">ShortURL: A URL Shortening service 🔗</h1>
-<p align = center>
-    <img alt="Project Logo" src="https://raw.githubusercontent.com/muKaustav/ShortURL/master/client/src/assets/images/shorurl.jpg" target="_blank" />
-</p>
-<h2 align='center'>A distributed and highly available URL Shortener.</h2><br/>
+# ShortURL
 
-## 📚 | Introduction
+A highly scalable, full-stack URL shortening service designed to efficiently convert long URLs into compact, easy-to-share links. The architecture is built for high availability and high performance, utilizing a modern tech stack and microservices-inspired deployment via Docker.
 
-- ShortURL is a distributed and highly available URL Shortening service, built on the MERN stack.
-- It uses Redis as a cache, and MongoDB as a NoSQL database.
-- It uses Nginx that acts as a load balancer, and a reverse proxy for the backend server.
-- It uses Apache ZooKeeper to provide tokens for hash generation, and eliminates race conditions between nodes.
-- The entire application is containerized by Docker, and orchestrated by k8s.
+## 🚀 Features
 
-### _**Disclaimer**_
+- **URL Shortening**: Easily convert any long URL into a short, manageable link.
+- **High Availability**: Utilizes NGINX as a reverse proxy and load balancer to distribute incoming traffic across multiple Node.js backend server instances.
+- **Fast Retrieval**: Integrates Redis for caching frequently accessed URLs, ensuring blazing-fast redirects.
+- **Distributed Coordination**: Leverages Apache Zookeeper for robust distributed coordination, such as managing range allocations for unique alias generation across multiple server instances.
+- **Persistent Storage**: MongoDB is used for reliable, persistent storage of URLs and their associated short mappings.
+- **Client-Side Optimization**: The React frontend uses Bloom Filters to quickly verify if a custom alias is potentially available without making unnecessary backend roundtrips.
+- **Containerized Deployment**: Fully containerized using Docker and Docker Compose for seamless setup, scaling, and deployment.
 
-- This is a demo application of a URL Shortener following the guidelines of efficient System Design.
-- This is a project demonstrating the entire development process and is meant to be run in a local environment.
+## 🛠️ Technology Stack
 
-<br/>
+**Frontend (Client)**
+- React (Create React App)
+- React Router DOM
+- SCSS for styling
+- Axios for API requests
+- Bloom Filters
 
-## 🚀 | Usage
+**Backend (Server)**
+- Node.js & Express.js
+- Mongoose (MongoDB ODM)
+- Redis Client
+- Node Zookeeper Client
+- Cron (for background tasks like purging expired aliases)
 
-- Install Docker Desktop and enable Kubernetes for a quick setup.
-- Clone this repository:<br>
+**Infrastructure & DevOps**
+- Docker & Docker Compose
+- NGINX (Load Balancer)
+- Redis (Caching)
+- Apache Zookeeper (Distributed System Coordination)
+- MongoDB (Database)
 
-```sh
-git clone https://github.com/muKaustav/ShortURL.git
-```
+## 🏗️ Architecture
 
-- Create a .env file with the following variables:
+1. **Client**: A React application running on port `3000`.
+2. **NGINX**: Acts as an API gateway/load balancer running on port `4000`, routing traffic to the backend instances.
+3. **Backend Servers**: Multiple instances of the Node.js Express server running internally on port `8081`. 
+4. **Zookeeper**: Coordinates the backend servers for unique token/alias generation.
+5. **Redis**: Caches URL mappings to reduce database load.
+6. **MongoDB**: The primary database storing the URL mappings.
 
-```js
-REACT_APP_MONGODB_URI="<enter your MongoDB URI>"
-REACT_APP_REDIS_PORT=1111 (defaults to 6379)
-REACT_APP_REDIS_HOST='redis-server' (name it as you like, but change the same in the docker-compose.yml file)
-```
+## 🏁 Getting Started
 
-- Open the project folder and start the container with docker compose:<br>
+### Prerequisites
 
-```yml
-docker compose up --build
+Make sure you have the following installed on your machine:
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
 
-# We can also scale instances of an image for higher scalability or distribution.
-Example: docker compose up --build --scale node-server=3
-```
-- Enjoy the project! 😉
+### Installation & Running
 
-<br/>
+1. **Clone the repository:**
+   ```bash
+   git clone <your-repository-url>
+   cd ShortURL-master
+   ```
 
-## 🌐 | API Endpoints
+2. **Start the application with Docker Compose:**
+   The `docker-compose.yml` file is configured to build the images. The configuration also allows you to scale the Node.js backend (e.g., to 3 instances) to demonstrate load balancing:
+   ```bash
+   docker-compose up --build --scale node-server=3
+   ```
 
-```yml
-GET:
-    /url/:identifier : Get the shortened URL from DB
-    /del : Delete the Zookeeper token
-POST:
-    /url [body : {"OriginalUrl" : "url"}] : Shorten the URL and store in DB
+3. **Access the Application:**
+   - **Frontend UI**: Open your browser and navigate to `http://localhost:3000`
+   - **Backend API (via NGINX Load Balancer)**: `http://localhost:4000`
 
+### API Endpoints
 
-Access the API using the following URLs:
-    Client: http://localhost:3000/
-    Load Balanced Server: http://localhost:4000/
-```
+- `POST /url` - Create a new shortened URL.
+- `GET /url/:identifier` - Retrieve the original URL for a given identifier.
+- `GET /del` - Delete/purge an identifier token.
 
-## 📺 | Demonstration
+## 📝 Background Workers
 
-<p align = center>
-    
-![trim](https://user-images.githubusercontent.com/50882624/154680953-a41c84e3-6512-4fdf-8b3c-b8856f3c5842.gif)
-
-</p>
-
-<br/>
-
-## 📘 | System Design Schematic
-
-<p align = center>
-    <img alt="getURL" src="https://raw.githubusercontent.com/muKaustav/ShortURL/master/client/src/assets/images/getURLs.png" target="_blank" />
-    <img alt="redirect" src="https://raw.githubusercontent.com/muKaustav/ShortURL/master/client/src/assets/images/redirect.png" target="_blank" />
-</p>
-
-<br/>
-
-## ⌛ | Architectural Discussion
-
-- The _**availability**_ of the application can be improved by using multiple Zookeeper instances, replicas of the DB, and a distributed cache, thus increasing the fault tolerance of the architecture.
-- Adding load balancers in between the following improves the performance of the application, and reduces the load on any particular instance:
-  - client and server
-  - server and DB
-  - server and cache
-- _**CAP Theorem**_:
-  - We opt for an _**eventually consistent approach**_, as in case of a network partition, a URL Shortener should have low latency and high throughput at all times. <br/>
-  - Redirection of the user to the original URL should always have low latency as it directly impacts the business aspect of the application.
-  - We don't opt for a _**strongly consistent approach**_, as we would have to wait for the data to be replicated across the cluster, which decreases the availability and increases the latency of the application, thus impacting the user experience negatively.
-
-<br/>
-
-## 💻 | References
-
-- [TinyURL System Design](https://www.codekarle.com/system-design/TinyUrl-system-design.html)
-- [System Design : Scalable URL shortener service like TinyURL](https://medium.com/@sandeep4.verma/system-design-scalable-url-shortener-service-like-tinyurl-106f30f23a82)
-- [An Illustrated Proof of the CAP Theorem](https://mwhittaker.github.io/blog/an_illustrated_proof_of_the_cap_theorem/)
-- [What is eventual consistency and why should you care about it?](https://www.keboola.com/blog/eventual-consistency)
-- [Redis Documentation](https://redis.io/documentation)
-- [Apache Zookeeper Documentation](https://zookeeper.apache.org/doc/r3.7.0/index.html)
-- [Nginx HTTP Load Balancing Documentation](https://docs.nginx.com/nginx/admin-guide/load-balancer/http-load-balancer/)
-- [Docker Documentation](https://docs.docker.com/language/nodejs/)
-- [Kompose Documentation](https://kompose.io/user-guide/)
-
-<br/>
-
-## 🍻 | Contributing
-
-Contributions, issues and feature requests are welcome.<br>
-Feel free to check [issues page](https://github.com/muKaustav/ShortURL/issues) if you want to contribute.
-
-<br/>
-
-## 🧑🏽 | Author
-
-**Kaustav Mukhopadhyay**
-
-- Linkedin: [@kaustavmukhopadhyay](https://www.linkedin.com/in/kaustavmukhopadhyay/)
-- Github: [@muKaustav](https://github.com/muKaustav)
-
-<br/>
-
-## 🙌 | Show your support
-
-Drop a ⭐️ if this project helped you!
-
-<br/>
-
-## 📝 | License
-
-Copyright © 2021 [Kaustav Mukhopadhyay](https://github.com/muKaustav).<br />
-This project is [MIT](./LICENSE) licensed.
-
----
+The backend includes cron-based background workers (e.g., `purgeAliases`) designed to periodically clean up expired or unused aliases from the database and cache, keeping the system optimized.
